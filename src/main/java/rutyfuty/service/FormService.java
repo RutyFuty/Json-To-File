@@ -1,27 +1,20 @@
-package rutyfuty.controllers;
+package rutyfuty.service;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 
+@Service
+public class FormService {
 
-@Controller
-public class FormController {
-
-    @GetMapping(value = "form")
-    public String handleGet() {
+    public String getForm() {
         return "form";
     }
 
-    @PostMapping(value = "form")
-    public void handlePost(@RequestBody String formParams, HttpServletResponse response) throws IOException {
-
+    public void handleForm(String formParams, HttpServletResponse response) {
         String fileName = formParams.split("\njsonText=")[0].replace("fileName=", "");
         String json = formParams.split("jsonText=")[1];
 
@@ -41,7 +34,7 @@ public class FormController {
                         jsonReader.beginObject();
                         break;
                     case NAME:
-                        String name = jsonReader.nextName();
+                        jsonReader.nextName();
                         break;
                     case STRING:
                         String str = jsonReader.nextString();
@@ -79,18 +72,22 @@ public class FormController {
 
         String resultString = stringBuilder.replace(stringBuilder.length() - 2, stringBuilder.length(), "").toString();
 
-        File tempFile = File.createTempFile("tempFile", null);
-        try (PrintWriter writer = new PrintWriter(tempFile, "UTF-8")) {
-            writer.print(resultString);
-            writer.flush();
-        }
-
-        try (InputStream inputStream = new FileInputStream(tempFile)) {
-            response.setContentType("application/txt");
-            response.setHeader("Content-Disposition", "attachment; filename=" + fileName + ".txt");
-            while (inputStream.available() > 0) {
-                response.getWriter().write(inputStream.read());
+        try {
+            File tempFile = File.createTempFile("tempFile", null);
+            try (PrintWriter writer = new PrintWriter(tempFile, "UTF-8")) {
+                writer.print(resultString);
+                writer.flush();
             }
+
+            try (InputStream inputStream = new FileInputStream(tempFile)) {
+                response.setContentType("application/txt");
+                response.setHeader("Content-Disposition", "attachment; filename=" + fileName + ".txt");
+                while (inputStream.available() > 0) {
+                    response.getWriter().write(inputStream.read());
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
     }
